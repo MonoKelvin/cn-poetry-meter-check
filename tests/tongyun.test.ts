@@ -27,4 +27,11 @@ describe('中华通韵（今音, pinyin-pro）', () => {
     expect(t.getRhymeGroups('天').some((g) => g.label === '十一安')).toBe(true)
     expect(t.getRhymeGroups('鱼').some((g) => g.label === '六迂')).toBe(true)
   })
+
+  it('ü 系与复合韵母映射', () => {
+    expect(t.isSameRhyme('月', '叶')).toBe(true) // üe(yue) / ie → 三鹅
+    expect(t.isSameRhyme('云', '春')).toBe(true) // ün(yun) / un → 十二恩
+    expect(t.isSameRhyme('规', '飞')).toBe(true) // ui / ei → 八欸
+    expect(t.getRhymeGroups('元').some((g) => g.label === '十一安')).toBe(true) // üan(yuan) → 安
+  })
 })

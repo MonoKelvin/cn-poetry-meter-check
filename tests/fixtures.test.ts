@@ -44,6 +44,21 @@ const CANON: { title: string; form: PoemFormId; text: string }[] = [
     form: 'wulv',
     text: '细草微风岸，危樯独夜舟。星垂平野阔，月涌大江流。名岂文章著，官应老病休。飘飘何所似，天地一沙鸥。',
   },
+  {
+    title: '早发白帝城（李白，七绝首句入韵）',
+    form: 'qijue',
+    text: '朝辞白帝彩云间，千里江陵一日还。两岸猿声啼不住，轻舟已过万重山。',
+  },
+  {
+    title: '次北固山下（王湾，五律）',
+    form: 'wulv',
+    text: '客路青山外，行舟绿水前。潮平两岸阔，风正一帆悬。海日生残夜，江春入旧年。乡书何处达，归雁洛阳边。',
+  },
+  {
+    title: '送杜少府之任蜀州（王勃，五律）',
+    form: 'wulv',
+    text: '城阙辅三秦，风烟望五津。与君离别意，同是宦游人。海内存知己，天涯若比邻。无为在歧路，儿女共沾巾。',
+  },
 ]
 
 describe('经典近体诗回归', () => {
@@ -63,6 +78,11 @@ describe('经典近体诗回归', () => {
 describe('仄韵古绝应判为不合近体（押韵报错）', () => {
   it('《江雪》仄韵五绝', () => {
     const r = checkMeter('千山鸟飞绝，万径人踪灭。孤舟蓑笠翁，独钓寒江雪。')
+    expect(r.issues.some((i) => i.category === 'rhyme')).toBe(true)
+  })
+
+  it('《鹿柴》仄韵五绝', () => {
+    const r = checkMeter('空山不见人，但闻人语响。返景入深林，复照青苔上。')
     expect(r.issues.some((i) => i.category === 'rhyme')).toBe(true)
   })
 })
