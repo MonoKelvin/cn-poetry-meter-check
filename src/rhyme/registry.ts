@@ -22,7 +22,7 @@ export function getRhymeTable(id: RhymeBookId): RhymeTable {
   if (!factory) {
     if (id === 'tongyun') {
       throw new Error(
-        '中华通韵字表数据待补充，暂不可用；请改用 pingshui / xinyun / cilin，或自行注册 tongyun 韵表。',
+        '中华通韵依今音，需可选依赖 pinyin-pro；请先 registerRhymeTable(await createTongyunRhymeTable()) 再使用，或改用 pingshui / xinyun / cilin。',
       )
     }
     throw new Error(`未知韵表：${id}`)

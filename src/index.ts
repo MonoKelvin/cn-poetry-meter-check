@@ -99,6 +99,7 @@ export async function checkMeterResolved(
 }
 
 export { getRhymeTable, registerRhymeTable } from './rhyme/registry'
+export { createTongyunRhymeTable } from './rhyme/tongyun'
 export type { RhymeTable } from './rhyme/rhyme-table'
 export { buildPattern } from './core/meter-pattern'
 export * from './core/types'

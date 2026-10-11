@@ -7,5 +7,5 @@ export default defineConfig({
   sourcemap: true,
   clean: true,
   target: 'es2021',
-  external: [/^@node-rs\/jieba/],
+  external: [/^@node-rs\/jieba/, /^pinyin-pro/],
 })
