@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>cn-poetry-meter-check 格律检测示例</title>
+    <link rel="stylesheet" href="app.css" />
+  </head>
+  <body>
+    <main>
+      <h1>中国古典诗词格律检测</h1>
+      <p class="hint">
+        输入近体诗（五/七言绝句或律诗），以逗号、句号分隔句子。
+        示例：白日依山尽，黄河入海流。欲穷千里目，更上一层楼。
+      </p>
+      <textarea id="poem" rows="6" placeholder="在此输入诗作……">白日依山尽，黄河入海流。欲穷千里目，更上一层楼。</textarea>
+      <div class="controls">
+        <label>韵表
+          <select id="rhymeBook">
+            <option value="pingshui">平水韵（默认）</option>
+            <option value="xinyun">中华新韵</option>
+            <option value="cilin">词林正韵</option>
+          </select>
+        </label>
+        <label>严格度
+          <select id="strictness">
+            <option value="normal">常规</option>
+            <option value="strict">严格</option>
+            <option value="loose">宽松</option>
+          </select>
+        </label>
+        <button id="check">检测</button>
+      </div>
+      <p class="legend">
+        <span class="cell tone-level">平</span>
+        <span class="cell tone-oblique">仄</span>
+        <span class="cell tone-either">中</span>
+        <span class="cell tone-unknown">录</span>
+        <span class="swatch rhyme">韵脚</span>
+        <span class="swatch bad-error">出律</span>
+      </p>
+      <section id="result" class="result" hidden></section>
+
+      <details class="ai-panel">
+        <summary>对仗检测（启发式免联网；填入密钥可用大模型判工对/合掌）</summary>
+        <div class="ai-grid">
+          <input id="chu" placeholder="出句，如 两个黄鹂鸣翠柳" />
+          <input id="dui" placeholder="对句，如 一行白鹭上青天" />
+          <button id="aiCheck">对仗检测</button>
+        </div>
+        <details class="ai-config">
+          <summary>大模型配置（可选）</summary>
+          <div class="ai-grid">
+            <select id="provider">
+              <option value="anthropic">anthropic（Claude 规范）</option>
+              <option value="openai-compat">openai-compat（Qwen/DeepSeek/Kimi/OpenAI）</option>
+            </select>
+            <input id="baseUrl" placeholder="baseUrl" />
+            <input id="model" placeholder="model id" />
+            <input id="apiKey" type="password" placeholder="apiKey（仅存于本页内存）" />
+          </div>
+        </details>
+        <div id="aiResult" class="ai-result"></div>
+        <p class="foot">浏览器直连第三方接口可能受 CORS 限制；如受限请改在 Node 侧调用。</p>
+      </details>
+
+      <p class="foot">本页为静态示例，需先 <code>npm run build</code> 生成 <code>dist/</code>，再经本地静态服务器打开。</p>
+    </main>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

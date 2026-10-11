@@ -1,0 +1,10 @@
+数据来源与许可（data/ 目录）
+
+1) Pingshui_Rhyme.json / Cilin_Rhyme.json / Xinyun_Rhyme.json / Word_Tune.json
+   来源：charlesix59/chinese_word_rhyme（MIT License）
+   许可全文见 NOTICE-chinese_word_rhyme.txt。
+
+2) Guangyun_Tone.json（广韵声调表，字 -> 平/仄/多）
+   由 LingDong-/cope（ISC License）的 rhymebooks.json 中“广韵”数据整理而成，
+   仅保留平仄用于生僻字平仄兜底。原项目：https://github.com/LingDong-/cope
+   ISC 许可：允许在保留版权声明前提下自由使用、修改与分发。

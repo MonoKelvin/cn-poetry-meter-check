@@ -1,0 +1,19 @@
+{
+  "default": "my-llm",
+  "apis": [
+    {
+      "name": "my-llm",
+      "provider": "anthropic",
+      "baseUrl": "https://api.anthropic.com",
+      "apiKey": "填入你的密钥（请复制为 cpmc.apis.json 后再填，勿提交）",
+      "model": "claude-xxx"
+    },
+    {
+      "name": "qwen-example",
+      "provider": "openai-compat",
+      "baseUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+      "apiKey": "sk-...",
+      "model": "qwen-plus"
+    }
+  ]
+}
