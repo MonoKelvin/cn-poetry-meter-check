@@ -26,23 +26,22 @@ export class IndexedRhymeTable implements RhymeTable {
     readonly id: RhymeBookId,
     readonly name: string,
     private readonly index: RhymeIndex,
-    /** 平仄兜底：当主索引未收录该字时，返回其可能平仄（无押韵分部）。 */
-    private readonly toneFallback?: (char: string) => Tone[] | undefined,
+    /**
+     * 平仄增补：合并额外平仄来源（如广韵），补齐主表缺失/不全的读音并扩大生僻字覆盖。
+     * 仅影响平仄（押韵分部始终以主表为准）；若某字实为多音，由此纠正为“两可”，避免误判出律。
+     */
+    private readonly toneAugment?: (char: string) => Tone[] | undefined,
   ) {}
 
   getToneInfo(char: string): ToneInfo {
     const e = this.index.get(char)
-    if (e && e.tones.size > 0) {
-      const tones = [...e.tones]
-      const pingze = new Set(tones.filter((t) => t === 'level' || t === 'oblique'))
-      return { tones, groups: e.groups, isPolyphone: pingze.size > 1 }
-    }
-    const fb = this.toneFallback?.(char)
-    if (fb && fb.length > 0) {
-      const pingze = new Set(fb.filter((t) => t === 'level' || t === 'oblique'))
-      return { tones: fb, groups: [], isPolyphone: pingze.size > 1 }
-    }
-    return { tones: ['unknown'], groups: [], isPolyphone: false }
+    const tones = new Set<Tone>(e ? e.tones : [])
+    const aug = this.toneAugment?.(char)
+    if (aug) for (const t of aug) tones.add(t)
+    if (tones.size === 0) return { tones: ['unknown'], groups: [], isPolyphone: false }
+    const arr = [...tones]
+    const pingze = new Set(arr.filter((t) => t === 'level' || t === 'oblique'))
+    return { tones: arr, groups: e ? e.groups : [], isPolyphone: pingze.size > 1 }
   }
 
   getRhymeGroups(char: string): RhymeGroup[] {

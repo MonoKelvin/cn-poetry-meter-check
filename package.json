@@ -63,6 +63,7 @@
     "node": ">=18"
   },
   "optionalDependencies": {
-    "@node-rs/jieba": "^2.0.4"
+    "@node-rs/jieba": "^2.0.4",
+    "pinyin-pro": "^3.29.5"
   }
 }

@@ -27,8 +27,8 @@ function build(): RhymeIndex {
   return index
 }
 
-/** 广韵声调兜底：'平'→平，'仄'→仄，'多'→两可。 */
-function guangyunFallback(char: string): Tone[] | undefined {
+/** 广韵声调增补：'平'→平，'仄'→仄，'多'→两可；用于补齐平水韵缺失读音与生僻字。 */
+function guangyunAugment(char: string): Tone[] | undefined {
   const v = guangyunData[char]
   if (v === '平') return ['level']
   if (v === '仄') return ['oblique']
@@ -37,8 +37,8 @@ function guangyunFallback(char: string): Tone[] | undefined {
 }
 
 let table: IndexedRhymeTable | undefined
-/** 获取平水韵韵表（惰性构建索引，含广韵平仄兜底）。 */
+/** 获取平水韵韵表（惰性构建索引，含广韵平仄增补）。 */
 export function pingshui(): IndexedRhymeTable {
-  if (!table) table = new IndexedRhymeTable('pingshui', '平水韵', build(), guangyunFallback)
+  if (!table) table = new IndexedRhymeTable('pingshui', '平水韵', build(), guangyunAugment)
   return table
 }
