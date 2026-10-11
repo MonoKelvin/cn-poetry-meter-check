@@ -1,71 +1,347 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>cn-poetry-meter-check 格律检测示例</title>
+    <title>cn-poetry-meter-check · 近体诗格律检测</title>
+    <meta name="description" content="输入近体诗，即时标出每字平仄，并校验押韵、粘对、孤平与拗救。" />
+    <script>
+      document.documentElement.classList.add('js')
+    </script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.48.0/dist/tabler-icons.min.css" />
     <link rel="stylesheet" href="app.css" />
+    <!-- dist/index.js 以裸包名引入 zod / pinyin-pro；浏览器无 node 解析，经 importmap 指向 CDN 的 ESM 构建 -->
+    <script type="importmap">
+      {
+        "imports": {
+          "zod": "https://cdn.jsdelivr.net/npm/zod@3.25.76/+esm",
+          "pinyin-pro": "https://cdn.jsdelivr.net/npm/pinyin-pro@3.29.5/+esm"
+        }
+      }
+    </script>
   </head>
   <body>
-    <main>
-      <h1>中国古典诗词格律检测</h1>
-      <p class="hint">
-        输入近体诗（五/七言绝句或律诗），以逗号、句号分隔句子。
-        示例：白日依山尽，黄河入海流。欲穷千里目，更上一层楼。
-      </p>
-      <textarea id="poem" rows="6" placeholder="在此输入诗作……">白日依山尽，黄河入海流。欲穷千里目，更上一层楼。</textarea>
-      <div class="controls">
-        <label>韵表
-          <select id="rhymeBook">
-            <option value="pingshui">平水韵（默认）</option>
-            <option value="xinyun">中华新韵</option>
-            <option value="cilin">词林正韵</option>
-          </select>
-        </label>
-        <label>严格度
-          <select id="strictness">
-            <option value="normal">常规</option>
-            <option value="strict">严格</option>
-            <option value="loose">宽松</option>
-          </select>
-        </label>
-        <button id="check">检测</button>
-      </div>
-      <p class="legend">
-        <span class="cell tone-level">平</span>
-        <span class="cell tone-oblique">仄</span>
-        <span class="cell tone-either">中</span>
-        <span class="cell tone-unknown">录</span>
-        <span class="swatch rhyme">韵脚</span>
-        <span class="swatch bad-error">出律</span>
-      </p>
-      <section id="result" class="result" hidden></section>
+    <header class="nav">
+      <a class="wordmark" href="#top"><i class="ti ti-brush"></i>cn-poetry-meter-check</a>
+      <nav class="nav-links">
+        <a href="#features">特性</a>
+        <a href="#usage">上手</a>
+        <a class="nav-git" href="https://github.com/MonoKelvin/cn-poetry-meter-check" target="_blank" rel="noreferrer"><i class="ti ti-brand-github"></i>GitHub</a>
+      </nav>
+    </header>
 
-      <details class="ai-panel">
-        <summary>对仗检测（启发式免联网；填入密钥可用大模型判工对/合掌）</summary>
-        <div class="ai-grid">
-          <input id="chu" placeholder="出句，如 两个黄鹂鸣翠柳" />
-          <input id="dui" placeholder="对句，如 一行白鹭上青天" />
-          <button id="aiCheck">对仗检测</button>
+    <main id="top">
+      <section class="hero">
+        <div class="hero-sigil" aria-hidden="true"><span>格</span><span>律</span></div>
+        <div class="hero-head anim">
+          <p class="eyebrow">近体诗 · 格律检测</p>
+          <h1>格律，逐字可见</h1>
+          <p class="intro">输入一首近体诗，即时标出每字平仄，并校验押韵、粘对、孤平与拗救。纯算法、可离线。</p>
         </div>
-        <details class="ai-config">
-          <summary>大模型配置（可选）</summary>
-          <div class="ai-grid">
-            <select id="provider">
-              <option value="anthropic">anthropic（Claude 规范）</option>
-              <option value="openai-compat">openai-compat（Qwen/DeepSeek/Kimi/OpenAI）</option>
-            </select>
-            <input id="baseUrl" placeholder="baseUrl" />
-            <input id="model" placeholder="model id" />
-            <input id="apiKey" type="password" placeholder="apiKey（仅存于本页内存）" />
-          </div>
-        </details>
-        <div id="aiResult" class="ai-result"></div>
-        <p class="foot">浏览器直连第三方接口可能受 CORS 限制；如受限请改在 Node 侧调用。</p>
-      </details>
 
-      <p class="foot">本页为静态示例，需先 <code>npm run build</code> 生成 <code>dist/</code>，再经本地静态服务器打开。</p>
+        <div class="instrument anim">
+          <div class="pane pane-input">
+            <div class="pane-head">
+              <span class="pane-title">原文</span>
+              <span class="pane-meta" id="poemCount">0 字</span>
+            </div>
+            <textarea id="poem" rows="2" spellcheck="false">白日依山尽，黄河入海流。欲穷千里目，更上一层楼。</textarea>
+            <div class="controls">
+              <label class="field">
+                <span class="field-label">韵表</span>
+                <span class="select">
+                  <select id="rhymeBook">
+                    <option value="pingshui">平水韵</option>
+                    <option value="xinyun">中华新韵</option>
+                    <option value="cilin">词林正韵</option>
+                  </select>
+                  <i class="ti ti-chevron-down"></i>
+                </span>
+              </label>
+              <label class="field">
+                <span class="field-label">严格度</span>
+                <span class="select">
+                  <select id="strictness">
+                    <option value="normal">常规</option>
+                    <option value="strict">严格</option>
+                    <option value="loose">宽松</option>
+                  </select>
+                  <i class="ti ti-chevron-down"></i>
+                </span>
+              </label>
+              <button id="check" class="btn btn-primary" type="button">检测</button>
+            </div>
+          </div>
+          <div class="pane pane-result">
+            <div class="pane-head">
+              <span class="pane-title">检测</span>
+              <p class="mark-legend">
+                <span><i class="mk mk-level"></i>平</span>
+                <span><i class="mk mk-oblique"></i>仄</span>
+                <span><i class="mk mk-either"></i>两可</span>
+                <span class="lg-rhyme">韵脚</span>
+                <span class="lg-bad">出律</span>
+                <span class="lg-amb">多音</span>
+              </p>
+            </div>
+            <div id="result" class="result" aria-live="polite"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="band" id="features">
+        <h2 class="anim">能做什么</h2>
+        <dl class="defs">
+          <div class="def anim" style="--i:0"><dt>基础检测，离线可跑</dt><dd>诗体识别、平仄、押韵（落韵/重韵）、替粘对、孤平、三平调、拗救与特拗、多音字歧义，皆纯算法，零网络。</dd></div>
+          <div class="def anim" style="--i:1"><dt>多部韵表</dt><dd>平水韵（中古音含入声，广韵平仄兜底）、词林正韵、中华新韵；中华通韵依今音映射。可切换、可扩展。</dd></div>
+          <div class="def anim" style="--i:2"><dt>对仗与推荐</dt><dd>对仗启发式免联网；接入大模型可判工对与合掌，并补救出律、替换对仗、成诗、炼字。</dd></div>
+          <div class="def anim" style="--i:3"><dt>工程</dt><dd>TypeScript，产出 ESM、CJS 与类型声明；Zod 校验、单元测试、持续集成；MIT 许可。</dd></div>
+        </dl>
+
+        <div class="duizhang anim">
+          <h3>对仗检测</h3>
+          <p class="intro">免联网的启发式校验：等长与节奏点平仄相对。</p>
+          <div class="dz-row">
+            <input id="chu" type="text" placeholder="出句，如 两个黄鹂鸣翠柳" />
+            <input id="dui" type="text" placeholder="对句，如 一行白鹭上青天" />
+            <button id="dzCheck" class="btn btn-ghost" type="button">检测</button>
+          </div>
+          <div id="dzResult" class="dz-result" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <section class="band" id="usage">
+        <h2 class="anim">上手</h2>
+        <div class="usage anim">
+          <div class="usage-item">
+            <p class="usage-label">安装 · 最基础</p>
+            <pre class="code"><code><span class="c-com"># 安装</span>
+npm i cn-poetry-meter-check
+
+import { checkMeter } from 'cn-poetry-meter-check'
+
+const r = checkMeter('白日依山尽，黄河入海流。欲穷千里目，更上一层楼。')
+r.form.name           <span class="c-com">// '五言绝句'</span>
+r.inferredRhymeGroup  <span class="c-com">// '十一尤'</span>
+r.passed              <span class="c-com">// true</span></code></pre>
+          </div>
+          <div class="usage-item">
+            <p class="usage-label">检测选项与结果</p>
+            <pre class="code"><code>const r = checkMeter(poem, {
+  form: 'auto',          <span class="c-com">// 'auto' | 'wujue' | 'wulv' | 'qijue' | 'qilv'</span>
+  rhymeBook: 'pingshui', <span class="c-com">// 'pingshui' | 'cilin' | 'xinyun' | 'tongyun'</span>
+  strictness: 'normal',  <span class="c-com">// 'strict' | 'normal' | 'loose'</span>
+})
+
+r.passed    <span class="c-com">// 无 error 即 true</span>
+r.stats     <span class="c-com">// { errors, warnings, infos }</span>
+r.issues    <span class="c-com">// [{ level, category, message, position?, suggestion? }]</span>
+r.lines     <span class="c-com">// 逐句逐字：[{ cells: [{ char, tone, expected?, isRhyme? }] }]</span></code></pre>
+          </div>
+          <div class="usage-item">
+            <p class="usage-label">复用检测器 · 多韵表</p>
+            <pre class="code"><code>import { PoetryChecker, getRhymeTable, createTongyunRhymeTable, registerRhymeTable } from 'cn-poetry-meter-check'
+
+<span class="c-com">// 固定一组选项，多次检测</span>
+const checker = new PoetryChecker({ rhymeBook: 'cilin', strictness: 'strict' })
+checker.check(poemA); checker.check(poemB)
+
+<span class="c-com">// 直接查字的平仄 / 韵部</span>
+const t = getRhymeTable('pingshui')
+t.getToneInfo('山')       <span class="c-com">// { tones, groups, isPolyphone }</span>
+t.isSameRhyme('流', '楼')  <span class="c-com">// true</span>
+
+<span class="c-com">// 中华通韵（今音，需可选依赖 pinyin-pro）</span>
+registerRhymeTable(await createTongyunRhymeTable())
+checkMeter(poem, { rhymeBook: 'tongyun' })</code></pre>
+          </div>
+          <div class="usage-item">
+            <p class="usage-label">对仗 · 多音字（高级，免联网）</p>
+            <pre class="code"><code>import { createAdvancedChecker } from 'cn-poetry-meter-check'
+
+<span class="c-com">// 不配 ai：对仗走启发式（等长 + 节奏点平仄相对）</span>
+const adv = createAdvancedChecker()
+const d = await adv.duizhang.check('两个黄鹂鸣翠柳', '一行白鹭上青天')
+d.isParallel  <span class="c-com">// true | false | null</span>
+d.confidence  <span class="c-com">// 0 ~ 1</span></code></pre>
+          </div>
+          <div class="usage-item">
+            <p class="usage-label">接入大模型 · 代码配置（数组，字段同 JSON）</p>
+            <pre class="code"><code>import { pickLlmConfig, createAdvancedChecker } from 'cn-poetry-meter-check'
+
+const file = {
+  default: 'qwen',
+  apis: [
+    { name: 'qwen', provider: 'openai-compat',
+      baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+      apiKey: process.env.DASHSCOPE_KEY, model: 'qwen-plus' },
+    { name: 'deepseek', provider: 'openai-compat',
+      baseUrl: 'https://api.deepseek.com/v1',
+      apiKey: process.env.DEEPSEEK_KEY, model: 'deepseek-chat' },
+    { name: 'claude', provider: 'anthropic',
+      apiKey: process.env.ANTHROPIC_KEY, model: 'claude-sonnet-4-6' },
+  ],
+}
+const ai = pickLlmConfig(file, 'qwen')  <span class="c-com">// 省略名称则取 default，再否则首项</span>
+const adv = createAdvancedChecker({ ai, duizhangSkill })</code></pre>
+          </div>
+          <div class="usage-item">
+            <p class="usage-label">接入大模型 · 配置文件 cpmc.apis.json</p>
+            <pre class="code"><code><span class="c-com">// cpmc.apis.json（含密钥，务必加入 .gitignore）</span>
+{
+  "default": "qwen",
+  "apis": [
+    { "name": "qwen", "provider": "openai-compat",
+      "baseUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+      "apiKey": "sk-…", "model": "qwen-plus" },
+    { "name": "claude", "provider": "anthropic",
+      "apiKey": "sk-ant-…", "model": "claude-sonnet-4-6" }
+  ]
+}
+
+<span class="c-com">// 读取并选取</span>
+import { loadLlmConfigs, pickLlmConfig } from 'cn-poetry-meter-check'
+const file = await loadLlmConfigs()       <span class="c-com">// 默认 ./cpmc.apis.json</span>
+const ai = pickLlmConfig(file, 'claude')  <span class="c-com">// 省略名称则用 default</span></code></pre>
+          </div>
+          <div class="usage-item">
+            <p class="usage-label">SKILL 传入 · 字符串 / 内置文件 / 自定义路径</p>
+            <pre class="code"><code>import { loadSkillText, createAdvancedChecker } from 'cn-poetry-meter-check'
+import { readFile } from 'node:fs/promises'
+
+<span class="c-com">// 1) 直接字符串（支持 {{var}} 占位）</span>
+const inline = '你是对仗检测专家，判定 {{chu}} 与 {{dui}} 是否工对。'
+<span class="c-com">// 2) 内置技能文件 skills/&lt;name&gt;/SKILL.md（仅 Node）</span>
+const polyphoneSkill = await loadSkillText('resolve-polyphone')
+<span class="c-com">// 3) 自定义路径：自行读取文本后传入</span>
+const duizhangSkill = await readFile('./skills/duizhang.md', 'utf8')
+
+const adv = createAdvancedChecker({ ai, duizhangSkill, polyphoneSkill })
+await adv.duizhang.check(chu, dui)   <span class="c-com">// 有 ai+skill 时走大模型，判工对/合掌</span>
+await adv.polyphone.resolve('重', '轻舟已过万重山', 6)</code></pre>
+          </div>
+          <div class="usage-item">
+            <p class="usage-label">推荐 · 补救 / 对仗 / 成诗 / 补句 / 填字 / 字眼</p>
+            <pre class="code"><code>import { createRecommender, loadSkillText } from 'cn-poetry-meter-check'
+
+const rec = createRecommender({
+  ai,
+  skills: { 'compose-poem': await loadSkillText('compose-poem') },
+})
+await rec.fixMeter(poem)                                 <span class="c-com">// 出律补救</span>
+await rec.fixDuizhang('两个黄鹂鸣翠柳', '一行白鹭上青天')  <span class="c-com">// 对仗替换</span>
+await rec.composePoem({ form: 'qijue', theme: '秋江晚望', rhyme: '平水韵 十一尤' })
+await rec.completeLine('两个黄鹂鸣翠柳', 'chu')           <span class="c-com">// 补对句</span>
+await rec.fillChar('白日依□尽，黄河入海流。……')          <span class="c-com">// 填字</span>
+await rec.recommendEye(poem)                             <span class="c-com">// 字眼（五言第三/七言第五字）</span>
+<span class="c-com">// 未配 ai 时返回桩实现：{ recommendations: [], notImplemented: true }</span></code></pre>
+          </div>
+          <p class="usage-foot">完整类型声明与各 SKILL 模板见 <a href="https://github.com/MonoKelvin/cn-poetry-meter-check/tree/main/docs" target="_blank" rel="noreferrer">docs/</a>。</p>
+        </div>
+      </section>
     </main>
+
+    <footer class="footer">
+      <span class="wordmark">cn-poetry-meter-check</span>
+      <span class="foot-sep">MIT 许可</span>
+      <span class="foot-sep">韵表数据 charlesix59/chinese_word_rhyme（MIT）、LingDong-/cope（ISC）</span>
+      <a href="https://github.com/MonoKelvin/cn-poetry-meter-check" target="_blank" rel="noreferrer"><i class="ti ti-brand-github"></i>GitHub</a>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+    <script>
+      // 滚动渐入（GSAP ScrollTrigger；无 GSAP 或用户减弱动态时立即显示）+ 兜底提示
+      ;(function () {
+        var anims = Array.prototype.slice.call(document.querySelectorAll('.anim'))
+        var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
+        if (reduce || !window.gsap || !window.ScrollTrigger) {
+          anims.forEach(function (el) {
+            el.classList.add('in')
+          })
+        } else {
+          gsap.registerPlugin(ScrollTrigger)
+          gsap.set(anims, { opacity: 0, y: 24 })
+          ScrollTrigger.batch(anims, {
+            start: 'top 86%',
+            once: true,
+            onEnter: function (batch) {
+              gsap.to(batch, { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out', stagger: 0.09, overwrite: true })
+            },
+          })
+          ScrollTrigger.refresh()
+        }
+      })()
+      setTimeout(function () {
+        if (window.__cpmcLoaded) return
+        var r = document.getElementById('result')
+        if (r && !r.innerHTML.trim()) {
+          r.innerHTML =
+            '<p class="hint-serve"><i class="ti ti-info-circle"></i> 演示需以本地服务器打开（ES 模块不能走 file://）。请运行 <code>npm run example</code>，再访问提示的地址。</p>'
+        }
+      }, 2500)
+    </script>
+    <script>
+      // 代码块高亮：高级灰底 + 低饱和马卡龙（逐行、字符串优先，URL 中的 // 不误判为注释）
+      ;(function () {
+        var KW = /^(?:import|from|export|default|const|let|var|async|await|new|return|function)\b/
+        var esc = function (s) {
+          return s.replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c] })
+        }
+        function hl(src) {
+          var out = '', i = 0, n = src.length
+          while (i < n) {
+            var ch = src[i], rest = src.slice(i)
+            if (ch === "'" || ch === '"') {
+              var j = i + 1
+              while (j < n && src[j] !== ch) j++
+              out += '<span class="c-str">' + esc(src.slice(i, Math.min(j + 1, n))) + '</span>'
+              i = j + 1
+            } else if (rest.slice(0, 2) === '//' || ch === '#') {
+              out += '<span class="c-com">' + esc(src.slice(i)) + '</span>'
+              break
+            } else if (rest.match(KW)) {
+              var k = rest.match(KW)[0]
+              out += '<span class="c-kw">' + esc(k) + '</span>'
+              i += k.length
+            } else if (rest.match(/^[A-Za-z_$][A-Za-z0-9_$]*/)) {
+              var w = rest.match(/^[A-Za-z_$][A-Za-z0-9_$]*/)[0]
+              if (/^\s*\(/.test(src.slice(i + w.length))) out += '<span class="c-fn">' + esc(w) + '</span>'
+              else if (/^(?:true|false|null|undefined)$/.test(w)) out += '<span class="c-lit">' + esc(w) + '</span>'
+              else out += esc(w)
+              i += w.length
+            } else if (rest.match(/^\d[\d.]*/)) {
+              var d = rest.match(/^\d[\d.]*/)[0]
+              out += '<span class="c-lit">' + esc(d) + '</span>'
+              i += d.length
+            } else if ('{}[]()'.indexOf(ch) >= 0) {
+              out += '<span class="c-punc">' + esc(ch) + '</span>'
+              i++
+            } else {
+              out += esc(ch)
+              i++
+            }
+          }
+          return out
+        }
+        var pres = document.querySelectorAll('.code')
+        for (var b = 0; b < pres.length; b++) {
+          var pre = pres[b]
+          var code = pre.querySelector('code')
+          if (code) code.innerHTML = code.textContent.split('\n').map(hl).join('\n')
+          var wrap = document.createElement('div')
+          wrap.className = 'code-wrap'
+          pre.parentNode.insertBefore(wrap, pre)
+          wrap.appendChild(pre)
+          var item = pre.closest ? pre.closest('.usage-item') : null
+          var label = item ? item.querySelector('.usage-label') : null
+          var tag = document.createElement('span')
+          tag.className = 'code-lang'
+          tag.textContent = label && /配置文件/.test(label.textContent) ? 'json' : 'ts'
+          wrap.appendChild(tag)
+        }
+      })()
+    </script>
     <script type="module" src="app.js"></script>
   </body>
 </html>

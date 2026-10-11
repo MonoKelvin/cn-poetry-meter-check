@@ -71,12 +71,13 @@ await rec.composePoem({ form: 'wujue', theme: '秋山', rhyme: '平水韵 下平
 ## 开发
 
 ```bash
+npm run example     # 构建并本地起服，打开演示页（推荐）
 npm run build       # tsup → dist（ESM + CJS + d.ts）
 npm test            # vitest
 npm run typecheck   # tsc --noEmit
 ```
 
-示例页：`npm run build` 后，用本地静态服务器打开 `example/index.html`。
+演示页用 ES 模块，须经本地服务器打开（不能 `file://` 直开）；`npm run example` 会自动构建并起服，终端打印访问地址。
 
 ## 文档
 
